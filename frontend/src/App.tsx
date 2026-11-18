@@ -370,7 +370,7 @@ export default function App() {
                     <span className="purple-dot" /> TODAY'S LITTLE ADVENTURE
                   </span>
                   <h3>A sky full of stars</h3>
-                  <p>Can you count them all? Let's find out!</p>
+                  <p>Can you solve Pip's star puzzles?</p>
                   <span className="daily-meta">
                     <span>
                       <Icon name="star" size={15} /> Earn a star
