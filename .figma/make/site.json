@@ -1,0 +1,10 @@
+{
+  "description": "An engaging, safe, and accessible educational website offering interactive games, stories, and creative activities tailored for children aged 5 to 8.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
