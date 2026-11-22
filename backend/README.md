@@ -36,7 +36,7 @@ Lists use `GET` and return a `products`, `services`, or `requests` array. Create
 - Product fields are `id`, `name`, and `description`. Services also have `durationMinutes`. IDs are lowercase slugs and can be supplied during creation.
 - Order requests take `requestId`, `productId`, and `quantity` from 1 to 10. Service requests take `requestId` and `serviceId`. For an edit, send only the item or quantity changes in the PATCH body.
 - The frontend should generate one UUID with `crypto.randomUUID()` per submission and reuse it when retrying. A new submission returns `201` and a repeated submission by the same account with the same details returns `200`. Both return `{ requestId, status: "requested" }`. An unavailable item returns `404` and conflicting reuse returns `409`.
-- Protected routes take a Firebase ID token in the `Authorization: Bearer <token>` header. The API checks the verified token's custom role claim and uses its UID for ownership checks. Email comes from the signed-in account. The request body only accepts the documented fields.
+- Protected routes take a Firebase ID token in the `Authorization: Bearer <token>` header. Administrator access requires the signed `admin` custom claim. A self-registered email/password account gets guardian access after verifying its email. The API uses the verified account's UID for ownership checks. The request body only accepts the documented fields.
 
 ### Demo accounts
 
@@ -69,3 +69,14 @@ Invoke-RestMethod -Method Post -ContentType 'application/json' `
 ## Run the same backend test as CI
 
 Stop the manual emulators with `Ctrl+C` to free ports 8080 and 9099. In the backend directory, run `pnpm.cmd test`. The command starts both emulators, runs Node's integration tests, and stops the emulators afterward.
+
+## Use cloud Firebase for the demo
+
+In a fresh PowerShell terminal in the `backend/` directory, set the same project ID as the registered Web app. The API uses [Application Default Credentials](https://firebase.google.com/docs/admin/setup#initialize_the_sdk). If you have a local service account key, keep it outside Git and set `GOOGLE_APPLICATION_CREDENTIALS` to its absolute path in this terminal.
+
+```powershell
+$env:LITTLE_WORLD_FIREBASE_PROJECT_ID = 'your-firebase-project-id'
+pnpm.cmd dev
+```
+
+The demo seed script is emulator-only. Catalog writes in the cloud project require an administrator account with the signed `admin` claim.

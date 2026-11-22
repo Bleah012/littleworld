@@ -1,29 +1,42 @@
 import { useEffect, useRef, useState } from "react"
 import Icon from "../components/Icon"
+import { registerGuardian, resendVerification } from "../auth/guardian-auth.js"
 import { apiRequest, signInGuardian } from "./products-api.js"
 
 const catalogView = { kind: "catalog" }
 const ordersView = { kind: "orders" }
 const endpoint = "/order-requests"
 
-function SignInForm({ submit, busy }) {
+function GuardianForm({ registering, email, submit, busy, canResend }) {
   return (
     <form className="products-form" onSubmit={(event) => {
       event.preventDefault()
       const data = new FormData(event.currentTarget)
-      submit(String(data.get("email")).trim(), String(data.get("password")))
+      const action = event.nativeEvent.submitter?.value
+      submit(String(data.get("email")).trim(), String(data.get("password")), action)
     }}>
       <label>
         Guardian email
-        <input type="email" name="email" autoComplete="username" required />
+        <input type="email" name="email" autoComplete="username" defaultValue={email} required />
       </label>
       <label>
         Password
-        <input type="password" name="password" autoComplete="current-password" required />
+        <input type="password" name="password"
+          autoComplete={registering ? "new-password" : "current-password"}
+          minLength={registering ? 6 : undefined}
+          aria-describedby={registering ? "guardian-password-hint" : undefined} required />
       </label>
-      <button className="primary-button" type="submit" disabled={busy}>
-        {busy ? "Signing in…" : "Sign in"}
-      </button>
+      {registering && <p id="guardian-password-hint">Use at least 6 characters.</p>}
+      <div className="button-row products-actions">
+        <button className="primary-button" type="submit" disabled={busy}>
+          {registering ? "Create account" : "Sign in"}
+        </button>
+        {canResend && (
+          <button className="secondary-button" type="submit" value="resend" disabled={busy}>
+            Resend verification email
+          </button>
+        )}
+      </div>
     </form>
   )
 }
@@ -98,6 +111,9 @@ export default function ProductsPanel({ onBack }) {
         setError("Your session has ended. Sign in again.")
       } else {
         setError(failure.message)
+        if (failure.code === "EMAIL_VERIFICATION_REQUIRED") {
+          setView((current) => ({ ...current, resend: true }))
+        }
       }
     } finally {
       setBusy(false)
@@ -117,8 +133,14 @@ export default function ProductsPanel({ onBack }) {
     }
   }
 
-  function login(email, password) {
+  function login(email, password, action) {
     run(async () => {
+      if (action === "resend") {
+        await resendVerification(email, password)
+        show({ kind: "verify-email", email, emailSent: true, next: view.next })
+        return
+      }
+
       const guardian = await signInGuardian(email, password)
       setSession(guardian)
       show(view.next)
@@ -126,6 +148,13 @@ export default function ProductsPanel({ onBack }) {
         setOrders(null)
         await loadOrders(guardian)
       }
+    })
+  }
+
+  function register(email, password) {
+    run(async () => {
+      const emailSent = await registerGuardian(email, password)
+      show({ kind: "verify-email", email, emailSent, next: view.next })
     })
   }
 
@@ -226,7 +255,36 @@ export default function ProductsPanel({ onBack }) {
         <section className="products-card products-section">
           <h3 ref={heading} tabIndex={-1}>Guardian sign-in</h3>
           <p>Sign in to send and manage your requests.</p>
-          <SignInForm submit={login} busy={busy} />
+          <GuardianForm key="sign-in" email={view.email} submit={login} busy={busy}
+            canResend={view.resend} />
+          <button className="secondary-button" type="button" disabled={busy} onClick={() => {
+            show({ kind: "sign-up", email: view.email, next: view.next })
+          }}>Create guardian account</button>
+        </section>
+      )}
+
+      {view.kind === "sign-up" && (
+        <section className="products-card products-section">
+          <h3 ref={heading} tabIndex={-1}>Create a guardian account</h3>
+          <p>Parents and guardians can use their own email to manage requests.</p>
+          <GuardianForm key="sign-up" registering email={view.email} submit={register} busy={busy} />
+          <button className="secondary-button" type="button" disabled={busy} onClick={() => {
+            show({ kind: "sign-in", email: view.email, next: view.next })
+          }}>Back to sign-in</button>
+        </section>
+      )}
+
+      {view.kind === "verify-email" && (
+        <section className="products-card products-section">
+          <h3 ref={heading} tabIndex={-1}>Verify your guardian email</h3>
+          {view.emailSent ? (
+            <p>Open the verification link sent to <strong>{view.email}</strong>, then sign in.</p>
+          ) : (
+            <p>Your account was created. Go back to sign-in to resend the verification email to <strong>{view.email}</strong>.</p>
+          )}
+          <button className="primary-button" type="button" onClick={() => {
+            show({ kind: "sign-in", email: view.email, resend: true, next: view.next })
+          }}>Back to sign-in</button>
         </section>
       )}
 

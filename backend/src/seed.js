@@ -1,6 +1,8 @@
 import { seedAccounts } from "./auth.js"
 import { seedCatalog } from "./catalog.js"
-import { auth, db } from "./firestore.js"
+import { auth, db, useEmulators } from "./firestore.js"
+
+if (!useEmulators) throw new Error("Demo accounts and catalog can only be seeded in the local emulators.")
 
 try {
   await seedCatalog(db)
