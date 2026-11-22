@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Icon, { type IconName } from "./components/Icon"
 import Illustration, {
   Fox,
@@ -8,6 +8,7 @@ import Illustration, {
 import Modal from "./components/Modal"
 import Adventure from "./activities/Adventure"
 import useProgress from "./hooks/useProgress"
+import ProductsPanel from "./products/ProductsPanel.jsx"
 
 type Page = "Home" | "Learn" | "Games" | "Stories" | "Create" | "My Stars"
 const nav: {
@@ -75,7 +76,8 @@ export default function App() {
   const [page, setPage] = useState<Page>("Home")
   const [activity, setActivity] = useState<World | null>(null)
   const [sound, setSound] = useState(false)
-  const [modal, setModal] = useState<"avatar" | "gate" | "parent" | null>(null)
+  const [modal, setModal] = useState<"avatar" | "gate" | "parent" | "products" | null>(null)
+  const grownUpsButton = useRef<HTMLButtonElement>(null)
   const [gate, setGate] = useState("")
   const [gateHint, setGateHint] = useState(false)
   const [largeText, setLargeText] = useState(false)
@@ -435,6 +437,7 @@ export default function App() {
           <span>No ads. Just adventures.</span>
           <span className="footer-dot">·</span>
           <button
+            ref={grownUpsButton}
             onClick={() => {
               setModal("gate")
               setGate("")
@@ -509,6 +512,7 @@ export default function App() {
         <Modal
           title="A little gate for grown-ups"
           onClose={() => setModal(null)}
+          returnFocus={grownUpsButton}
         >
           <div className="parent-gate">
             <div className="gate-icon">
@@ -548,9 +552,14 @@ export default function App() {
         </Modal>
       )}
       {modal === "parent" && (
-        <Modal title="Grown-ups corner" onClose={() => setModal(null)}>
+        <Modal title="Grown-ups corner" onClose={() => setModal(null)} returnFocus={grownUpsButton}>
           <div className="parent-dashboard">
             <p>A little snapshot of your explorer's journey.</p>
+            <div className="button-row grown-ups-actions">
+              <button className="primary-button" type="button" onClick={() => setModal("products")}>
+                Products <Icon name="arrow" />
+              </button>
+            </div>
             <div className="parent-stats">
               <div>
                 <strong>{progress.stars}</strong>
@@ -622,10 +631,14 @@ export default function App() {
               </select>
             </label>
             <p className="privacy-note">
-              <Icon name="lock" size={17} /> Progress stays on this device. No
-              account, tracking, or personal information.
+              <Icon name="lock" size={17} /> Activity progress stays on this device.
             </p>
           </div>
+        </Modal>
+      )}
+      {modal === "products" && (
+        <Modal title="Products" onClose={() => setModal(null)} returnFocus={grownUpsButton}>
+          <ProductsPanel onBack={() => setModal("parent")} />
         </Modal>
       )}
     </div>
