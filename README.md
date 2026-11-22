@@ -10,7 +10,7 @@ Little World is a class project based on the supplied Figma Make export. The ori
 | `frontend/src/components/` | Shared UI components, icons, and illustrations. |
 | `frontend/src/activities/` | Interactive activities. |
 | `frontend/src/hooks/` | Reusable React logic, including on-device progress. |
-| `backend/` | Reserved for the Node.js API and Firebase integration. |
+| `backend/` | Node.js API, Firebase emulators, and integration tests. See [backend setup](backend/README.md). |
 
 ## Run in VS Code
 
@@ -31,4 +31,4 @@ To verify the production build, run `pnpm build` from `frontend/`. If Windows Po
 
 - Start each task on a feature branch from `main` and open a pull request for teammate review.
 - Include how you verified the change. For frontend work, include the browser and the layout or interaction you checked.
-- Commit `frontend/pnpm-lock.yaml` with frontend dependency changes. Keep local environment files and credentials out of Git.
+- Commit the lockfile for the package whose dependencies change. Keep local environment files and credentials out of Git.

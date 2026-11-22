@@ -1,0 +1,24 @@
+{
+  "name": "little-world-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.3",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-littleworld",
+    "seed": "node src/seed.js",
+    "test": "firebase emulators:exec --only auth,firestore --project demo-littleworld \"node --test\""
+  },
+  "dependencies": {
+    "fastify": "5.12.8",
+    "firebase-admin": "14.5.1"
+  },
+  "devDependencies": {
+    "firebase-tools": "15.37.0"
+  }
+}
