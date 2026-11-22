@@ -123,12 +123,32 @@ test("supports service requests and rejects invalid order data", async () => {
   const url = "/api/service-requests"
   const requestId = randomUUID()
   const detail = `${url}/${requestId}`
+  const requestBody = { requestId, serviceId: "story-club" }
 
+  assert.equal((await send("POST", url, null, requestBody)).statusCode, 401)
   assert.equal((await send("POST", url, guardianToken, { requestId, serviceId: "missing" })).statusCode, 404)
-  assert.equal((await send("POST", url, guardianToken, { requestId, serviceId: "story-club" })).statusCode, 201)
+  assert.equal((await send("POST", url, guardianToken, requestBody)).statusCode, 201)
+  assert.equal((await send("POST", url, guardianToken, requestBody)).statusCode, 200)
   assert.equal((await send("GET", detail, guardianToken)).json().itemName, "Story Club")
-  assert.equal((await send("PATCH", detail, adminToken, { serviceId: "creative-workshop" })).json().itemName, "Creative Workshop")
-  assert.equal((await send("DELETE", detail, adminToken)).statusCode, 204)
+  assert.equal((await send("GET", url, guardianToken)).json().requests[0].requestId, requestId)
+  assert.deepEqual((await send("GET", url, otherToken)).json(), { requests: [] })
+  assert.equal((await send("GET", detail, otherToken)).statusCode, 404)
+  assert.equal((await send("PATCH", detail, otherToken, { serviceId: "creative-workshop" })).statusCode, 404)
+  assert.equal((await send("DELETE", detail, otherToken)).statusCode, 404)
+  const updated = await send("PATCH", detail, guardianToken, { serviceId: "creative-workshop" })
+  assert.equal(updated.statusCode, 200)
+  assert.equal(updated.json().itemName, "Creative Workshop")
+  assert.equal((await send("GET", detail, adminToken)).json().serviceId, "creative-workshop")
+  assert.equal((await send("DELETE", detail, guardianToken)).statusCode, 204)
+  assert.deepEqual((await send("GET", url, guardianToken)).json(), { requests: [] })
+
+  const adminRequestId = randomUUID()
+  const adminDetail = `${url}/${adminRequestId}`
+  assert.equal((await send("POST", url, guardianToken, { ...requestBody, requestId: adminRequestId })).statusCode, 201)
+  const adminEdit = await send("PATCH", adminDetail, adminToken, { serviceId: "creative-workshop" })
+  assert.equal(adminEdit.statusCode, 200)
+  assert.equal(adminEdit.json().itemName, "Creative Workshop")
+  assert.equal((await send("DELETE", adminDetail, adminToken)).statusCode, 204)
 
   const invalidId = randomUUID()
   const payload = { requestId: invalidId, productId: "craft-kit", quantity: 1 }

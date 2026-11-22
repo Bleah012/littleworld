@@ -8,7 +8,7 @@ import Illustration, {
 import Modal from "./components/Modal"
 import Adventure from "./activities/Adventure"
 import useProgress from "./hooks/useProgress"
-import ProductsPanel from "./products/ProductsPanel.jsx"
+import RequestsPanel from "./requests/RequestsPanel.jsx"
 
 type Page = "Home" | "Learn" | "Games" | "Stories" | "Create" | "My Stars"
 const nav: {
@@ -76,7 +76,7 @@ export default function App() {
   const [page, setPage] = useState<Page>("Home")
   const [activity, setActivity] = useState<World | null>(null)
   const [sound, setSound] = useState(false)
-  const [modal, setModal] = useState<"avatar" | "gate" | "parent" | "products" | null>(null)
+  const [modal, setModal] = useState<"avatar" | "gate" | "parent" | "products" | "services" | null>(null)
   const grownUpsButton = useRef<HTMLButtonElement>(null)
   const [gate, setGate] = useState("")
   const [gateHint, setGateHint] = useState(false)
@@ -559,6 +559,9 @@ export default function App() {
               <button className="primary-button" type="button" onClick={() => setModal("products")}>
                 Products <Icon name="arrow" />
               </button>
+              <button className="primary-button" type="button" onClick={() => setModal("services")}>
+                Services <Icon name="arrow" />
+              </button>
             </div>
             <div className="parent-stats">
               <div>
@@ -636,9 +639,10 @@ export default function App() {
           </div>
         </Modal>
       )}
-      {modal === "products" && (
-        <Modal title="Products" onClose={() => setModal(null)} returnFocus={grownUpsButton}>
-          <ProductsPanel onBack={() => setModal("parent")} />
+      {(modal === "products" || modal === "services") && (
+        <Modal key={modal} title={modal === "products" ? "Products" : "Services"}
+          onClose={() => setModal(null)} returnFocus={grownUpsButton}>
+          <RequestsPanel kind={modal} onBack={() => setModal("parent")} />
         </Modal>
       )}
     </div>
