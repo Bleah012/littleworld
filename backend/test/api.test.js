@@ -4,23 +4,29 @@ import { after, before, test } from "node:test"
 import buildApp from "../src/app.js"
 import { demoAccounts, seedAccounts } from "../src/auth.js"
 import { seedCatalog } from "../src/catalog.js"
-import { auth, db, projectId } from "../src/firestore.js"
+import { auth, db, projectId, useEmulators } from "../src/firestore.js"
 
+assert.ok(useEmulators, "Run these integration tests against the local emulators.")
 const app = buildApp({ auth, db })
 const other = { email: "other-guardian@example.test", password: "LittleWorldOtherDemo!" }
 let adminToken
 let guardianToken
 let otherToken
 
-async function signIn({ email, password }) {
-  const url = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-key`
+async function authRequest(action, body) {
+  const url = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:${action}?key=demo-key`
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, password, returnSecureToken: true }),
+    body: JSON.stringify(body),
   })
   assert.equal(response.status, 200)
-  return (await response.json()).idToken
+  return response.json()
+}
+
+async function signIn({ email, password }) {
+  const account = await authRequest("signInWithPassword", { email, password, returnSecureToken: true })
+  return account.idToken
 }
 
 function send(method, url, token, payload) {
@@ -35,7 +41,7 @@ function send(method, url, token, payload) {
 before(async () => {
   await seedCatalog(db)
   await seedAccounts(auth)
-  const account = await auth.createUser(other)
+  const account = await auth.createUser({ ...other, emailVerified: true })
   await auth.setCustomUserClaims(account.uid, { role: "guardian" })
   const [guardian, admin] = demoAccounts
   ;[guardianToken, adminToken, otherToken] = await Promise.all([
@@ -147,6 +153,37 @@ test("returns a session only for a verified guardian", async () => {
   const response = await send("GET", url, guardianToken)
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), { email: demoAccounts[0].email })
+})
+
+test("requires email verification for self-registered guardians and restricts admin actions", async () => {
+  const account = { email: "new-guardian@example.test", password: "LittleWorldNewGuardian!" }
+  const newUser = await authRequest("signUp", { ...account, returnSecureToken: true })
+  const sessionUrl = "/api/guardian-session"
+  const requestId = randomUUID()
+  const payload = { requestId, productId: "craft-kit", quantity: 1 }
+
+  const unverified = await send("GET", sessionUrl, newUser.idToken)
+  assert.equal(unverified.statusCode, 403)
+  assert.equal(unverified.json().code, "EMAIL_VERIFICATION_REQUIRED")
+  assert.equal((await send("POST", "/api/order-requests", newUser.idToken, payload)).statusCode, 403)
+
+  await authRequest("sendOobCode", { requestType: "VERIFY_EMAIL", idToken: newUser.idToken })
+  const host = process.env.FIREBASE_AUTH_EMULATOR_HOST
+  const codes = await fetch(`http://${host}/emulator/v1/projects/${projectId}/oobCodes`)
+  assert.equal(codes.status, 200)
+  const verification = (await codes.json()).oobCodes.find((code) => code.email === account.email)
+  assert.ok(verification)
+  await authRequest("update", { oobCode: verification.oobCode })
+
+  const token = await signIn(account)
+  const session = await send("GET", sessionUrl, token)
+  assert.equal(session.statusCode, 200)
+  assert.deepEqual(session.json(), { email: account.email })
+  assert.equal((await send("POST", "/api/order-requests", token, payload)).statusCode, 201)
+  assert.equal((await send("GET", `/api/order-requests/${requestId}`, otherToken)).statusCode, 404)
+  assert.equal((await send("POST", "/api/products", token, {
+    id: "guardian-notebook", name: "Notebook", description: "A notebook.",
+  })).statusCode, 403)
 })
 
 test("Firestore rules deny direct unauthenticated reads", async () => {

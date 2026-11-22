@@ -1,4 +1,4 @@
-const authUrl = "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-key"
+import { getGuardianToken } from "../auth/guardian-auth.js"
 
 class ApiError extends Error {
   constructor(message, status) {
@@ -34,25 +34,10 @@ export async function apiRequest(path, { method = "GET", body, token, signal } =
 }
 
 export async function signInGuardian(email, password) {
-  let response
+  const token = await getGuardianToken(email, password)
   try {
-    response = await fetch(authUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, returnSecureToken: true }),
-    })
-  } catch {
-    throw new ApiError("Guardian sign-in is temporarily unavailable. Try again.")
-  }
-
-  const result = await response.json().catch(() => null)
-  if (!response.ok || !result?.idToken) {
-    throw new ApiError("Check your email and password and try again.")
-  }
-
-  try {
-    const guardian = await apiRequest("/guardian-session", { token: result.idToken })
-    return { email: guardian.email, token: result.idToken }
+    const guardian = await apiRequest("/guardian-session", { token })
+    return { email: guardian.email, token }
   } catch (error) {
     if (error.status === 403) {
       throw new ApiError("Use a guardian account to manage product requests.")
