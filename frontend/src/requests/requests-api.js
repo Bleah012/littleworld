@@ -40,7 +40,7 @@ export async function signInGuardian(email, password) {
     return { email: guardian.email, token }
   } catch (error) {
     if (error.status === 403) {
-      throw new ApiError("Use a guardian account to manage product requests.")
+      throw new ApiError("Use a guardian account to manage requests.")
     }
     throw error
   }
