@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import Icon from "../components/Icon"
 import Illustration, { type World } from "../components/Illustration"
 import Modal from "../components/Modal"
+import getQuestion from "./questions.js"
 
 const story = [
   {
@@ -17,93 +18,6 @@ const story = [
     art: "create" as World,
   },
 ]
-const questions: Record<string, {
-  instruction: string
-  answers: string[]
-  correct: string
-  hint: string
-}[]> = {
-  abc: [
-    {
-      instruction: "Which letter starts Apple?",
-      answers: ["A", "B", "C"],
-      correct: "A",
-      hint: "Apple starts with the sound “ah”. Look for A.",
-    },
-    {
-      instruction: "Which letter starts Bear?",
-      answers: ["D", "B", "A"],
-      correct: "B",
-      hint: "B makes the sound “buh”, just like Bear.",
-    },
-    {
-      instruction: "Which letter starts Cat?",
-      answers: ["B", "A", "C"],
-      correct: "C",
-      hint: "Cat starts with C. You can do it!",
-    },
-  ],
-  numbers: [
-    {
-      instruction: "How many stars can you see?",
-      answers: ["2", "3", "4"],
-      correct: "3",
-      hint: "Point to each star: one, two, three!",
-    },
-    {
-      instruction: "How many stars can you see?",
-      answers: ["4", "5", "3"],
-      correct: "5",
-      hint: "Count slowly from left to right. There are five.",
-    },
-    {
-      instruction: "How many stars can you see?",
-      answers: ["4", "6", "5"],
-      correct: "4",
-      hint: "Count one, two, three, four!",
-    },
-  ],
-  games: [
-    {
-      instruction: "Find the circle!",
-      answers: ["Circle", "Square", "Triangle"],
-      correct: "Circle",
-      hint: "A circle is round, with no corners.",
-    },
-    {
-      instruction: "Find the triangle!",
-      answers: ["Square", "Triangle", "Circle"],
-      correct: "Triangle",
-      hint: "A triangle has three pointy corners.",
-    },
-    {
-      instruction: "Find the square!",
-      answers: ["Triangle", "Circle", "Square"],
-      correct: "Square",
-      hint: "A square has four equal sides.",
-    },
-  ],
-  explore: [
-    {
-      instruction: "Where do fish live?",
-      answers: ["Ocean", "Forest", "Sky"],
-      correct: "Ocean",
-      hint: "Fish swim in water. Choose the ocean!",
-    },
-    {
-      instruction: "What helps a flower grow?",
-      answers: ["Shoes", "Sunshine", "Books"],
-      correct: "Sunshine",
-      hint: "Plants love light from the sun.",
-    },
-    {
-      instruction: "Which animal can fly?",
-      answers: ["Fox", "Fish", "Bird"],
-      correct: "Bird",
-      hint: "Look for the animal with wings.",
-    },
-  ],
-}
 const titles: Record<World, string> = {
   abc: "ABC Land",
   numbers: "Number World",
@@ -134,13 +48,10 @@ export default function Adventure({
 }) {
   const [step, setStep] = useState(() => {
     try {
-      return Math.min(
-        2,
-        Math.max(
-          0,
-          Number(localStorage.getItem(`little-world-step-${kind}`)) || 0,
-        ),
-      )
+      const savedStep = Number(localStorage.getItem(`little-world-step-${kind}`))
+      return Number.isInteger(savedStep)
+        ? Math.min(2, Math.max(0, savedStep))
+        : 0
     } catch {
       return 0
     }
@@ -150,24 +61,14 @@ export default function Adventure({
   const [exit, setExit] = useState(false)
   const [paused, setPaused] = useState(false)
   const [breakTime, setBreakTime] = useState(false)
-  const baseQuestion = questions[kind]?.[step]
-  const q =
-    baseQuestion && difficulty === "Beginner"
-      ? {
-          ...baseQuestion,
-          answers: [
-            baseQuestion.correct,
-            baseQuestion.answers.find((a) => a !== baseQuestion.correct)!,
-          ].sort(),
-        }
-      : baseQuestion && difficulty === "Super Explorer" && kind === "numbers"
-        ? {
-            ...baseQuestion,
-            correct: String(Number(baseQuestion.correct) + 3),
-            answers: baseQuestion.answers.map((a) => String(Number(a) + 3)),
-            hint: "Touch each star as you count. Take your time!",
-          }
-        : baseQuestion
+  const q = getQuestion(kind, step, difficulty)
+  const isCorrect = answer === q?.correct
+  const nextQuestionButton = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    nextQuestionButton.current?.focus()
+  }, [isCorrect])
+
   useEffect(() => {
     const timer = window.setTimeout(
       () => setBreakTime(true),
@@ -304,7 +205,9 @@ export default function Adventure({
                 aria-label="Read instructions aloud"
                 disabled={!sound}
                 onClick={() =>
-                  speak(kind === "stories" ? story[step].text : q.instruction)
+                  speak(
+                    kind === "stories" ? story[step].text : (q?.instruction ?? ""),
+                  )
                 }
               >
                 <Icon name="play" />
@@ -339,15 +242,12 @@ export default function Adventure({
                 </button>
               </div>
             </div>
-          ) : (
+          ) : q && (
             <div className="quiz">
               <h3>{q.instruction}</h3>
-              {kind === "numbers" ? (
-                <div
-                  className="counting-stars"
-                  aria-label={`${q.correct} stars`}
-                >
-                  {Array.from({ length: Number(q.correct) }, (_, i) => (
+              {q.stars ? (
+                <div className="counting-stars" aria-hidden="true">
+                  {Array.from({ length: q.stars }, (_, i) => (
                     <Icon key={i} name="star" size={60} />
                   ))}
                 </div>
@@ -361,7 +261,8 @@ export default function Adventure({
                     className={`answer-button ${
                       answer === option ? "selected-answer" : ""
                     }`}
-                    disabled={answer === q.correct}
+                    aria-pressed={answer === option}
+                    disabled={isCorrect}
                     onClick={() => {
                       setAnswer(option)
                       speak(option === q.correct ? "Great job!" : q.hint)
@@ -391,12 +292,12 @@ export default function Adventure({
               </div>
               <div
                 className={`quiz-feedback ${
-                  answer === q.correct ? "correct" : ""
+                  isCorrect ? "correct" : ""
                 }`}
                 aria-live="polite"
               >
                 {answer &&
-                  (answer === q.correct ? (
+                  (isCorrect ? (
                     <>
                       <Icon name="check" /> Great job! You found it.
                     </>
@@ -404,8 +305,12 @@ export default function Adventure({
                     <>Almost! {q.hint}</>
                   ))}
               </div>
-              {answer === q.correct && (
-                <button className="primary-button" onClick={next}>
+              {isCorrect && (
+                <button
+                  ref={nextQuestionButton}
+                  className="primary-button"
+                  onClick={next}
+                >
                   {step === 2 ? "Collect my star" : "Let's try another"}{" "}
                   <Icon name={step === 2 ? "star" : "arrow"} />
                 </button>
