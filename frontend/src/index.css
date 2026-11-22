@@ -234,6 +234,24 @@ svg { flex-shrink: 0; }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--ink); font-size: 16px; }
 .setting-row input { width: 26px; height: 26px; accent-color: var(--ink); }
 .setting-row select { max-width: 180px; border: 2px solid var(--ink); border-radius: var(--radius-pill); background: var(--color-snow); padding: 10px 13px; }
+.grown-ups-actions { justify-content: flex-start; margin-top: 16px; }
+.products-panel { display: grid; gap: 16px; margin-top: 20px; }
+.products-panel h3, .products-panel h4 { font-family: var(--font-manrope); font-size: 20px; font-weight: 800; }
+.products-actions { justify-content: flex-start; }
+.products-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.products-card { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 16px; border: 2px solid var(--ink); border-radius: 24px; background: var(--color-snow); }
+.products-card > div:first-child { flex: 1 1 210px; }
+.products-card p { margin-top: 4px; }
+.products-section { display: grid; justify-content: stretch; }
+.products-form { display: grid; gap: 12px; }
+.products-form label { display: grid; gap: 5px; font-weight: 700; }
+.products-form input { min-height: 44px; width: 100%; padding: 8px 12px; border: 2px solid var(--ink); border-radius: 12px; background: var(--color-snow); }
+.products-form input[type="number"] { width: 8rem; }
+.products-panel button { min-height: 44px; justify-self: start; }
+.products-panel button:disabled { opacity: .65; cursor: wait; }
+.products-message { padding: 10px 12px; border: 2px solid var(--ink); border-radius: 12px; background: var(--color-sunbeam-yellow); }
+.products-receipt { background: var(--color-mint-wash); }
+.products-reference { overflow-wrap: anywhere; }
 .large-text .activity-card p { font-size: 18px; }
 .large-text .hero-copy > p { font-size: 24px; }
 .large-text .section-heading p { font-size: 20px; }

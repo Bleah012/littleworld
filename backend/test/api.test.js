@@ -140,6 +140,15 @@ test("supports service requests and rejects invalid order data", async () => {
   assert.equal((await db.collection("orderRequests").doc(invalidId).get()).exists, false)
 })
 
+test("returns a session only for a verified guardian", async () => {
+  const url = "/api/guardian-session"
+  assert.equal((await send("GET", url)).statusCode, 401)
+  assert.equal((await send("GET", url, adminToken)).statusCode, 403)
+  const response = await send("GET", url, guardianToken)
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(response.json(), { email: demoAccounts[0].email })
+})
+
 test("Firestore rules deny direct unauthenticated reads", async () => {
   const host = process.env.FIRESTORE_EMULATOR_HOST
   const response = await fetch(

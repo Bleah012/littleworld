@@ -27,6 +27,14 @@ pnpm dev --host 127.0.0.1 --port 5174
 
 To verify the production build, run `pnpm build` from `frontend/`. If Windows PowerShell blocks the `pnpm.ps1` launcher, use `pnpm.cmd` in the same commands or switch the VS Code terminal profile to Command Prompt.
 
+## Try the Products flow
+
+Start the Firebase emulators and Node API using the [backend setup](backend/README.md), then start the frontend with the command above. If the API was already running before updating, restart it to load the guardian session route.
+
+1. Open **Grown-ups corner** in the footer and choose **Products**.
+2. Choose an item, sign in with the guardian demo account listed in the backend setup, and send a request.
+3. Open **My requests** to check the saved item, change its quantity, or cancel it. Sign-in lasts while the Products dialog is open. Requests stay in the running Firestore emulator.
+
 ## Team workflow
 
 - Start each task on a feature branch from `main` and open a pull request for teammate review.

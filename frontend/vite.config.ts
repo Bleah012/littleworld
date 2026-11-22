@@ -10,6 +10,10 @@ import siteConfiguration from './.figma/make/site.json'
 export default defineConfig(({ mode }) => {
   // .figma/make/deploy-preview passes `--mode development` for cached-preview builds.
   const emitSourcemaps = mode === 'development'
+  const host = process.env.FIGMA_DEV_SERVER_HOST || '127.0.0.1'
+  const proxy = host === '127.0.0.1' || host === 'localhost'
+    ? { '/api': 'http://127.0.0.1:3001' }
+    : undefined
 
   return {
     base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
@@ -31,7 +35,8 @@ react(),
       },
     },
     server: {
-      host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
+      host,
+      proxy,
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
       watch: {
@@ -41,7 +46,8 @@ react(),
       },
     },
     preview: {
-      host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
+      host,
+      proxy,
       port: parseInt(process.env.PORT || '8443'),
     },
   }

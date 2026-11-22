@@ -1,4 +1,5 @@
 import Fastify from "fastify"
+import { requireRoles } from "./auth.js"
 import registerCatalogRoutes from "./catalog-routes.js"
 import registerRequestRoutes from "./request-routes.js"
 
@@ -39,6 +40,8 @@ export default function buildApp({ db, auth }, options = {}) {
   })
 
   app.get("/api/health", async () => ({ status: "ok" }))
+  app.get("/api/guardian-session", { onRequest: requireRoles(auth, "guardian") },
+    async ({ actor }) => ({ email: actor.email }))
   registerCatalogRoutes(app, db, auth)
   registerRequestRoutes(app, db, auth)
 

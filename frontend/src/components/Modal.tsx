@@ -1,4 +1,4 @@
-import { useEffect, useRef, useId, type ReactNode } from "react"
+import { useEffect, useRef, useId, type ReactNode, type RefObject } from "react"
 import Icon from "./Icon"
 
 export default function Modal({
@@ -6,24 +6,28 @@ export default function Modal({
   onClose,
   children,
   wide = false,
+  returnFocus,
 }: {
   title: string
   onClose: () => void
   children: ReactNode
   wide?: boolean
+  returnFocus?: RefObject<HTMLElement | null>
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   useEffect(() => {
     const dialog = ref.current!
-    const previous = document.activeElement as HTMLElement
+    const previous = returnFocus?.current ?? (document.activeElement as HTMLElement)
+    const previousOverflow = document.body.style.overflow
     dialog.showModal()
     document.body.style.overflow = "hidden"
     return () => {
-      document.body.style.overflow = ""
+      dialog.close()
+      document.body.style.overflow = previousOverflow
       previous?.focus()
     }
-  }, [])
+  }, [returnFocus])
   return (
     <dialog
       ref={ref}
